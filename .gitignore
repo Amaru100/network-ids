@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+venv/
+env/
+.env
+
+# ML Model artifacts
+ml/model/*.pkl
+ml/model/*.joblib
+
+# Dataset (too large for git)
+data/*.txt
+data/*.csv
+
+# Node.js
+node_modules/
+.env.local
+.env.production
+
+# Vercel
+.vercel/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Coverage
+htmlcov/
+.coverage
