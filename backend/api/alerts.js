@@ -1,10 +1,9 @@
 /**
  * alerts.js - Alerts API Endpoint (Vercel Serverless Function)
  * =============================================================
- * POST /api/alerts - Receive a new alert from the capture system
- * GET  /api/alerts - Retrieve alerts for the dashboard
- *
- * Author: University of Botswana - Final Year Project
+ * POST   /api/alerts - Receive a new alert from the capture system
+ * GET    /api/alerts - Retrieve alerts for the dashboard
+ * DELETE /api/alerts - Clear all alerts (for demo/reset)
  */
 
 const { supabase } = require('../config/db');
@@ -21,6 +20,8 @@ module.exports = async function handler(req, res) {
       return await handlePost(req, res);
     } else if (req.method === 'GET') {
       return await handleGet(req, res);
+    } else if (req.method === 'DELETE') {
+      return await handleDelete(req, res);
     } else {
       return res.status(405).json({ error: 'Method not allowed' });
     }
@@ -53,6 +54,13 @@ async function handlePost(req, res) {
       error: 'Missing required fields',
       required: ['category', 'attack_type', 'confidence', 'severity', 'src_ip', 'dst_ip'],
     });
+  }
+
+  // Normal traffic — just update the counter, don't store as alert
+  if (category === 'Normal') {
+    await updateNormalCount();
+    console.log(`[Normal] Safe traffic from ${src_ip}`);
+    return res.status(201).json({ message: 'Normal traffic counted', normal: true });
   }
 
   // Insert alert into Supabase
@@ -103,7 +111,6 @@ async function handlePost(req, res) {
 
 /**
  * GET /api/alerts - Retrieve alerts with optional filters
- * Query params: limit, offset, category, severity, src_ip, dst_ip
  */
 async function handleGet(req, res) {
   const {
@@ -121,7 +128,6 @@ async function handleGet(req, res) {
     .order('timestamp', { ascending: false })
     .range(Number(offset), Number(offset) + Number(limit) - 1);
 
-  // Apply filters
   if (category) query = query.eq('category', category);
   if (severity) query = query.eq('severity', severity);
   if (src_ip) query = query.eq('src_ip', src_ip);
@@ -143,11 +149,52 @@ async function handleGet(req, res) {
 }
 
 /**
- * Update traffic_stats counters after a new alert
+ * DELETE /api/alerts - Clear all alerts and reset stats
+ */
+async function handleDelete(req, res) {
+  // Delete all alerts
+  const { error } = await supabase
+    .from('alerts')
+    .delete()
+    .neq('id', 0);
+
+  if (error) {
+    console.error('[Alerts API] Delete error:', error.message);
+    return res.status(500).json({ error: 'Failed to clear alerts' });
+  }
+
+  // Reset traffic stats
+  const { data: statsRow } = await supabase
+    .from('traffic_stats')
+    .select('id')
+    .limit(1)
+    .single();
+
+  if (statsRow) {
+    await supabase
+      .from('traffic_stats')
+      .update({
+        total_packets: 0,
+        normal_count: 0,
+        attack_count: 0,
+        dos_count: 0,
+        probe_count: 0,
+        r2l_count: 0,
+        u2r_count: 0,
+        last_updated: new Date().toISOString(),
+      })
+      .eq('id', statsRow.id);
+  }
+
+  console.log('[Alerts API] All alerts cleared and stats reset');
+  return res.status(200).json({ message: 'All alerts cleared' });
+}
+
+/**
+ * Update traffic_stats counters after a new attack alert
  */
 async function updateStats(category) {
   try {
-    // Get current stats
     const { data: stats } = await supabase
       .from('traffic_stats')
       .select('*')
@@ -156,13 +203,11 @@ async function updateStats(category) {
 
     if (!stats) return;
 
-    // Build update object
     const updates = {
       attack_count: (stats.attack_count || 0) + 1,
       last_updated: new Date().toISOString(),
     };
 
-    // Increment the specific category counter
     const categoryMap = {
       DoS: 'dos_count',
       Probe: 'probe_count',
@@ -181,5 +226,31 @@ async function updateStats(category) {
       .eq('id', stats.id);
   } catch (err) {
     console.error('[Alerts API] Failed to update stats:', err.message);
+  }
+}
+
+/**
+ * Increment normal_count in traffic_stats
+ */
+async function updateNormalCount() {
+  try {
+    const { data: stats } = await supabase
+      .from('traffic_stats')
+      .select('*')
+      .limit(1)
+      .single();
+
+    if (!stats) return;
+
+    await supabase
+      .from('traffic_stats')
+      .update({
+        normal_count: (stats.normal_count || 0) + 1,
+        total_packets: (stats.total_packets || 0) + 1,
+        last_updated: new Date().toISOString(),
+      })
+      .eq('id', stats.id);
+  } catch (err) {
+    console.error('[Alerts API] Failed to update normal count:', err.message);
   }
 }
