@@ -60,16 +60,20 @@ async function sendAlertEmail(alert) {
   const mailOptions = {
     from: `"NIDS Alert System" <${process.env.EMAIL_USER}>`,
     to: recipientEmail,
-    subject: `[NIDS ALERT] ${alert.category} Attack Detected - ${alert.confidence}% Confidence`,
+    subject: `[NIDS ALERT] ${alert.category} Attack on ${alert.agent_name || 'Unknown'} - ${alert.confidence}% Confidence`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background-color: ${severityColor}; color: white; padding: 20px; text-align: center;">
           <h1 style="margin: 0;">INTRUSION DETECTED</h1>
-          <p style="margin: 5px 0 0 0; font-size: 18px;">${alert.category} Attack</p>
+          <p style="margin: 5px 0 0 0; font-size: 18px;">${alert.category} Attack on ${alert.agent_name || 'Unknown Agent'}</p>
         </div>
 
         <div style="padding: 20px; border: 1px solid #ddd;">
           <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">Agent (Machine)</td>
+              <td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold; color: #0366d6;">${alert.agent_name || 'Unknown'}</td>
+            </tr>
             <tr>
               <td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">Attack Category</td>
               <td style="padding: 10px; border-bottom: 1px solid #eee; color: ${severityColor}; font-weight: bold;">${alert.category}</td>

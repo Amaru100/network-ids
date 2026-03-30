@@ -24,8 +24,12 @@ import os
 import sys
 import time
 import signal
+import socket
+import platform
 import argparse
 import logging
+import threading
+import requests
 from scapy.all import sniff, get_if_list, conf
 
 # Add project root to path
@@ -128,6 +132,47 @@ def list_interfaces():
     print()
 
 
+def _get_local_ip():
+    """Get the local IP address of this machine."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('8.8.8.8', 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return 'unknown'
+
+
+def _heartbeat_loop(api_url, agent_name):
+    """
+    Background thread that sends periodic heartbeats to the backend.
+    Registers the agent on first run, then sends heartbeats every 30 seconds.
+    """
+    payload = {
+        'agent_name': agent_name,
+        'hostname': socket.gethostname(),
+        'ip_address': _get_local_ip(),
+        'os_info': f"{platform.system()} {platform.release()}",
+    }
+
+    while running:
+        try:
+            response = requests.post(
+                f"{api_url}/api/agents",
+                json=payload,
+                timeout=10
+            )
+            if response.status_code in [200, 201]:
+                logger.debug(f"Heartbeat sent for {agent_name}")
+            else:
+                logger.warning(f"Heartbeat failed: HTTP {response.status_code}")
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"Heartbeat error: {e}")
+
+        time.sleep(30)
+
+
 def main():
     """Main entry point for the NIDS packet capture system."""
     parser = argparse.ArgumentParser(
@@ -157,6 +202,11 @@ def main():
         '--model-dir',
         default=os.path.join(project_root, 'ml', 'model'),
         help='Path to the ML model directory'
+    )
+    parser.add_argument(
+        '--agent-name',
+        default=socket.gethostname(),
+        help='Name for this agent (default: system hostname)'
     )
 
     args = parser.parse_args()
@@ -193,11 +243,21 @@ def main():
     connection_tracker = ConnectionTracker()
     classifier = TrafficClassifier(
         model_dir=args.model_dir,
-        api_url=args.api_url
+        api_url=args.api_url,
+        agent_name=args.agent_name
     )
 
     if args.api_url:
         logger.info(f"Backend API: {args.api_url}")
+        logger.info(f"Agent Name: {args.agent_name}")
+
+        # Start heartbeat thread to register agent and send periodic heartbeats
+        heartbeat_thread = threading.Thread(
+            target=_heartbeat_loop,
+            args=(args.api_url, args.agent_name),
+            daemon=True
+        )
+        heartbeat_thread.start()
     else:
         logger.info("No API URL set - running in log-only mode")
         logger.info("Set NIDS_API_URL env var or use --api-url to send alerts to backend")

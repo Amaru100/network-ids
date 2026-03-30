@@ -9,6 +9,7 @@ import AttackChart from './components/AttackChart';
 import ThreatTrends from './components/ThreatTrends';
 import SeverityChart from './components/SeverityChart';
 import AccuracyChart from './components/AccuracyChart';
+import AgentStatus from './components/AgentStatus';
 
 function App() {
   const [alerts, setAlerts] = useState([]);
@@ -226,6 +227,8 @@ function App() {
 
           {view === 'dashboard' && (
             <>
+              <AgentStatus />
+
               <StatsCards stats={stats} alertCount={alerts.length} normalCount={normalCount} />
 
               <div className="grid-row">

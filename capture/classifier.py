@@ -43,7 +43,7 @@ class TrafficClassifier:
     Handles feature transformation, prediction, and alert dispatching.
     """
 
-    def __init__(self, model_dir, api_url=None):
+    def __init__(self, model_dir, api_url=None, agent_name=None):
         """
         Initialise the classifier by loading all required artifacts.
 
@@ -51,9 +51,11 @@ class TrafficClassifier:
             model_dir (str): Path to the ml/model directory containing:
                              best_model.pkl, scaler.pkl, label_encoder.pkl, feature_names.pkl
             api_url (str): Backend API URL for sending alerts. If None, alerts are logged only.
+            agent_name (str): Name of this agent for identifying the monitored machine.
         """
         self.api_url = api_url
         self.model_dir = model_dir
+        self.agent_name = agent_name
 
         # Load trained model and preprocessors
         logger.info("Loading ML model and preprocessors...")
@@ -295,6 +297,7 @@ class TrafficClassifier:
                     'src_port': result['src_port'],
                     'protocol': result['protocol'],
                     'timestamp': result['timestamp'],
+                    'agent_name': self.agent_name,
                 },
                 timeout=5
             )

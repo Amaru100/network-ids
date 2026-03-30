@@ -20,6 +20,7 @@ function AlertTable({ alerts, loading }) {
         <thead>
           <tr>
             <th>Time</th>
+            <th>Agent</th>
             <th>Category</th>
             <th>Attack Type</th>
             <th>Confidence</th>
@@ -34,6 +35,7 @@ function AlertTable({ alerts, loading }) {
           {alerts.map((alert) => (
             <tr key={alert.id} className={`severity-${alert.severity}`}>
               <td className="time-cell">{formatTime(alert.timestamp)}</td>
+              <td className="agent-cell">{alert.agent_name || '—'}</td>
               <td>
                 <span className={`category-badge cat-${alert.category?.toLowerCase()}`}>
                   {alert.category}

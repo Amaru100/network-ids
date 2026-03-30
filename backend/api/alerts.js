@@ -46,6 +46,7 @@ async function handlePost(req, res) {
     src_port,
     protocol,
     timestamp,
+    agent_name,
   } = req.body;
 
   // Validate required fields
@@ -77,6 +78,7 @@ async function handlePost(req, res) {
         dst_port: dst_port || 0,
         src_port: src_port || 0,
         protocol: protocol || 'tcp',
+        agent_name: agent_name || null,
         timestamp: timestamp || new Date().toISOString(),
       },
     ])
@@ -101,6 +103,7 @@ async function handlePost(req, res) {
       dst_ip,
       dst_port: dst_port || 0,
       protocol: protocol || 'tcp',
+      agent_name: agent_name || 'Unknown Agent',
       timestamp: timestamp || new Date().toISOString(),
     });
   }
