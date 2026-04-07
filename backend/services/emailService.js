@@ -4,27 +4,25 @@
  * Sends email alerts to the administrator when high-confidence
  * attacks are detected (confidence > 80%).
  *
- * Uses Nodemailer with Gmail SMTP (free, no card required).
+ * Uses Nodemailer with Outlook/Gmail SMTP.
  *
- * Gmail Setup:
- * 1. Enable 2-Step Verification on your Google account
- * 2. Go to https://myaccount.google.com/apppasswords
- * 3. Select "Mail" and generate an App Password
- * 4. Use that password as EMAIL_PASS
+ * Setup:
+ * Set EMAIL_USER, EMAIL_PASS, and optionally EMAIL_TO in Vercel env vars.
+ * EMAIL_PROVIDER can be 'outlook' or 'gmail' (default: outlook).
  *
  * Author: University of Botswana - Final Year Project
  */
 
 const nodemailer = require('nodemailer');
 
-// Create reusable transporter using Gmail SMTP
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+// Create transporter based on configured provider
+const provider = (process.env.EMAIL_PROVIDER || 'outlook').toLowerCase();
+
+const transportConfig = provider === 'gmail'
+  ? { service: 'gmail', auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS } }
+  : { host: 'smtp-mail.outlook.com', port: 587, secure: false, auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS } };
+
+const transporter = nodemailer.createTransport(transportConfig);
 
 /**
  * Send an attack alert email to the administrator.

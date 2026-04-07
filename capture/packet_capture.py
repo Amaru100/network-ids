@@ -58,6 +58,24 @@ def signal_handler(sig, frame):
     running = False
 
 
+# Skip these — normal network discovery traffic, not attacks
+IGNORED_PORTS = {5353, 1900, 5355, 3702, 138, 137, 547, 546}  # mDNS, SSDP, LLMNR, WS-Discovery, NetBIOS, DHCPv6
+
+
+def _is_noise(packet):
+    """Check if packet is benign network noise (multicast/broadcast)."""
+    from scapy.all import IP, UDP
+    if not packet.haslayer(IP):
+        return True
+    dst = packet[IP].dst
+    if dst.startswith('224.') or dst.startswith('239.') or dst.endswith('.255'):
+        return True
+    if packet.haslayer(UDP):
+        if packet[UDP].dport in IGNORED_PORTS or packet[UDP].sport in IGNORED_PORTS:
+            return True
+    return False
+
+
 def create_packet_handler(classifier, connection_tracker, log_all=False):
     """
     Create a packet processing callback function.
@@ -75,6 +93,10 @@ def create_packet_handler(classifier, connection_tracker, log_all=False):
     def handle_packet(packet):
         """Process a single captured packet."""
         if not running:
+            return
+
+        # Skip known benign network noise
+        if _is_noise(packet):
             return
 
         packet_count[0] += 1
