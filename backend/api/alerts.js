@@ -92,8 +92,8 @@ async function handlePost(req, res) {
   // Update traffic stats
   await updateStats(category);
 
-  // Send email for high-confidence alerts
-  if (confidence > 80) {
+  // Send email for alerts above 50% confidence
+  if (confidence > 50) {
     await sendAlertEmail({
       category,
       attack_type,

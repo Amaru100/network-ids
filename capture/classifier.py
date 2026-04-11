@@ -299,7 +299,7 @@ class TrafficClassifier:
                     'timestamp': result['timestamp'],
                     'agent_name': self.agent_name,
                 },
-                timeout=5
+                timeout=15
             )
 
             if response.status_code in [200, 201]:

@@ -20,7 +20,7 @@ const provider = (process.env.EMAIL_PROVIDER || 'outlook').toLowerCase();
 
 const transportConfig = provider === 'gmail'
   ? { service: 'gmail', auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS } }
-  : { host: 'smtp-mail.outlook.com', port: 587, secure: false, auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS } };
+  : { host: 'smtp.office365.com', port: 587, secure: false, auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }, tls: { ciphers: 'SSLv3' } };
 
 const transporter = nodemailer.createTransport(transportConfig);
 
@@ -39,8 +39,8 @@ const transporter = nodemailer.createTransport(transportConfig);
  * @returns {Promise<boolean>} True if email sent successfully
  */
 async function sendAlertEmail(alert) {
-  // Only send emails for high-confidence alerts (above 80%)
-  if (alert.confidence <= 80) {
+  // Only send emails for alerts above 50% confidence
+  if (alert.confidence <= 50) {
     return false;
   }
 
