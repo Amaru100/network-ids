@@ -110,6 +110,17 @@ def _is_noise(packet):
         if dst == local_ip and sport in WEB_PORTS:
             return True
 
+    # UDP web traffic — QUIC/HTTP3 (Google, YouTube, etc. use UDP port 443)
+    if packet.haslayer(UDP):
+        dport = packet[UDP].dport
+        sport = packet[UDP].sport
+
+        if src == local_ip and dport in WEB_PORTS:
+            return True
+
+        if dst == local_ip and sport in WEB_PORTS:
+            return True
+
     return False
 
 
