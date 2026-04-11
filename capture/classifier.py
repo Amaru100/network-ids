@@ -314,6 +314,31 @@ class TrafficClassifier:
             logger.error(f"Failed to send alert: {e}")
             return False
 
+    def send_normal(self, result):
+        """Send a Normal classification to the backend so the normal counter updates."""
+        if result is None or self.api_url is None:
+            return
+        try:
+            requests.post(
+                f"{self.api_url}/api/alerts",
+                json={
+                    'category': 'Normal',
+                    'attack_type': 'normal',
+                    'confidence': result['confidence'],
+                    'severity': 'none',
+                    'src_ip': result['src_ip'],
+                    'dst_ip': result['dst_ip'],
+                    'dst_port': result['dst_port'],
+                    'src_port': result['src_port'],
+                    'protocol': result['protocol'],
+                    'timestamp': result['timestamp'],
+                    'agent_name': self.agent_name,
+                },
+                timeout=5
+            )
+        except requests.exceptions.RequestException:
+            pass
+
     def get_stats(self):
         """Return current classification statistics."""
         total = self.stats['total_classified']

@@ -58,21 +58,58 @@ def signal_handler(sig, frame):
     running = False
 
 
-# Skip these — normal network discovery traffic, not attacks
-IGNORED_PORTS = {5353, 1900, 5355, 3702, 138, 137, 547, 546}  # mDNS, SSDP, LLMNR, WS-Discovery, NetBIOS, DHCPv6
+# Ports that are normal network noise — not attacks
+NOISE_PORTS = {5353, 1900, 5355, 3702, 138, 137, 547, 546}  # mDNS, SSDP, LLMNR, WS-Discovery, NetBIOS, DHCPv6
+
+# Common service ports — outbound traffic to these is normal web browsing
+WEB_PORTS = {80, 443, 8080, 8443, 53}  # HTTP, HTTPS, DNS
+
+_local_ip_cache = [None]
 
 
 def _is_noise(packet):
-    """Check if packet is benign network noise (multicast/broadcast)."""
-    from scapy.all import IP, UDP
+    """Check if packet is benign network noise that should be skipped."""
+    from scapy.all import IP, TCP, UDP
     if not packet.haslayer(IP):
         return True
+
+    src = packet[IP].src
     dst = packet[IP].dst
+
+    # Multicast and broadcast
     if dst.startswith('224.') or dst.startswith('239.') or dst.endswith('.255'):
         return True
+
+    # Common discovery ports (UDP)
     if packet.haslayer(UDP):
-        if packet[UDP].dport in IGNORED_PORTS or packet[UDP].sport in IGNORED_PORTS:
+        if packet[UDP].dport in NOISE_PORTS or packet[UDP].sport in NOISE_PORTS:
             return True
+        if packet[UDP].dport == 53 or packet[UDP].sport == 53:
+            return True
+
+    # Get local IP
+    if _local_ip_cache[0] is None:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(('8.8.8.8', 80))
+            _local_ip_cache[0] = s.getsockname()[0]
+            s.close()
+        except Exception:
+            _local_ip_cache[0] = ''
+    local_ip = _local_ip_cache[0]
+
+    if packet.haslayer(TCP):
+        dport = packet[TCP].dport
+        sport = packet[TCP].sport
+
+        # Outbound web traffic — not an intrusion
+        if src == local_ip and dport in WEB_PORTS:
+            return True
+
+        # Responses from external servers — not an intrusion
+        if dst == local_ip and sport in WEB_PORTS:
+            return True
+
     return False
 
 

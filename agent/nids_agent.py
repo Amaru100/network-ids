@@ -94,23 +94,55 @@ def _heartbeat_loop(api_url, agent_name):
         time.sleep(30)
 
 
-# Skip these — normal network discovery traffic, not attacks
-IGNORED_PORTS = {5353, 1900, 5355, 3702, 138, 137, 547, 546}  # mDNS, SSDP, LLMNR, WS-Discovery, NetBIOS, DHCPv6
+# Ports that are normal network noise — not attacks
+NOISE_PORTS = {5353, 1900, 5355, 3702, 138, 137, 547, 546}  # mDNS, SSDP, LLMNR, WS-Discovery, NetBIOS, DHCPv6
+
+# Common service ports — outbound traffic to these is normal web browsing, not intrusion
+WEB_PORTS = {80, 443, 8080, 8443, 53}  # HTTP, HTTPS, DNS
+
+# Cache the local IP so we only look it up once
+_local_ip_cache = [None]
 
 
 def _is_noise(packet):
-    """Check if packet is benign network noise (multicast/broadcast)."""
+    """Check if packet is benign network noise that should be skipped."""
     from scapy.all import IP, TCP, UDP
     if not packet.haslayer(IP):
         return True
+
+    src = packet[IP].src
     dst = packet[IP].dst
+
     # Multicast (224.x.x.x — 239.x.x.x) and broadcast (x.x.x.255)
     if dst.startswith('224.') or dst.startswith('239.') or dst.endswith('.255'):
         return True
-    # Common discovery ports
+
+    # Common discovery ports (UDP)
     if packet.haslayer(UDP):
-        if packet[UDP].dport in IGNORED_PORTS or packet[UDP].sport in IGNORED_PORTS:
+        if packet[UDP].dport in NOISE_PORTS or packet[UDP].sport in NOISE_PORTS:
             return True
+        # DNS traffic
+        if packet[UDP].dport == 53 or packet[UDP].sport == 53:
+            return True
+
+    # Get local IP
+    if _local_ip_cache[0] is None:
+        _local_ip_cache[0] = _get_local_ip()
+    local_ip = _local_ip_cache[0]
+
+    if packet.haslayer(TCP):
+        dport = packet[TCP].dport
+        sport = packet[TCP].sport
+
+        # Outbound web traffic — local machine browsing the internet (not an intrusion)
+        if src == local_ip and dport in WEB_PORTS:
+            return True
+
+        # Responses from external servers to local machine on ephemeral ports
+        # (these are replies to your web requests, not attacks)
+        if dst == local_ip and sport in WEB_PORTS:
+            return True
+
     return False
 
 
@@ -148,12 +180,15 @@ def create_packet_handler(classifier, connection_tracker, log_all=False):
                 f"{result['src_ip']:>15} -> {result['dst_ip']:>15}:{result['dst_port']:<5} | "
                 f"Confidence: {result['confidence']:>6.2f}%"
             )
-        elif log_all:
-            logger.info(
-                f"[   ] Normal | "
-                f"{result['src_ip']:>15} -> {result['dst_ip']:>15}:{result['dst_port']:<5} | "
-                f"Confidence: {result['confidence']:>6.2f}%"
-            )
+        else:
+            # Send Normal traffic count to backend (so dashboard counter updates)
+            classifier.send_normal(result)
+            if log_all:
+                logger.info(
+                    f"[   ] Normal | "
+                    f"{result['src_ip']:>15} -> {result['dst_ip']:>15}:{result['dst_port']:<5} | "
+                    f"Confidence: {result['confidence']:>6.2f}%"
+                )
 
         if packet_count[0] % 100 == 0:
             stats = classifier.get_stats()
