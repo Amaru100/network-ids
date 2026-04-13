@@ -83,8 +83,9 @@ def _is_private_ip(ip):
 
 def _is_noise(packet):
     """
-    Only classifies INBOUND traffic to this machine from private/local IPs.
-    Everything else (internet, outbound, self-traffic) is filtered out.
+    Classifies traffic between private/local IPs (LAN traffic).
+    Filters out: internet traffic, self-traffic, multicast, broadcast,
+    discovery protocols, and DNS.
     """
     from scapy.all import IP, TCP, UDP
     if not packet.haslayer(IP):
@@ -105,23 +106,10 @@ def _is_noise(packet):
     if src.startswith('127.') or dst.startswith('127.'):
         return True
 
-    # Get local IP
-    if _local_ip_cache[0] is None:
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(('8.8.8.8', 80))
-            _local_ip_cache[0] = s.getsockname()[0]
-            s.close()
-        except Exception:
-            _local_ip_cache[0] = ''
-    local_ip = _local_ip_cache[0]
-
-    # Only inspect INBOUND traffic to this machine
-    if dst != local_ip:
-        return True
-
-    # Only flag traffic from private/local network IPs
-    if not _is_private_ip(src):
+    # === CORE RULE: Both src and dst must be private/local IPs ===
+    # This catches LAN attacks (nmap, hping3, etc.) regardless of which
+    # interface the machine uses. Public internet IPs are filtered out.
+    if not _is_private_ip(src) or not _is_private_ip(dst):
         return True
 
     # Skip discovery noise

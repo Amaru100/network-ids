@@ -122,14 +122,9 @@ def _is_noise(packet):
     """
     Check if packet is benign noise that should be skipped.
 
-    ONLY classifies traffic that is:
-    - Inbound TO this machine (dst == local_ip)
-    - FROM a private/local network IP (same subnet / LAN)
-    - Not self-traffic (src != dst)
-    - Not discovery/broadcast/multicast noise
-
-    Everything else is filtered out — internet traffic, outbound
-    browsing, responses from web servers, etc. are NOT attacks.
+    Classifies traffic between private/local IPs (LAN traffic).
+    Filters out: internet traffic, self-traffic, multicast, broadcast,
+    discovery protocols, and DNS.
     """
     from scapy.all import IP, TCP, UDP
     if not packet.haslayer(IP):
@@ -150,19 +145,10 @@ def _is_noise(packet):
     if src.startswith('127.') or dst.startswith('127.'):
         return True
 
-    # Get local IP
-    if _local_ip_cache[0] is None:
-        _local_ip_cache[0] = _get_local_ip()
-    local_ip = _local_ip_cache[0]
-
-    # === CORE RULE: Only inspect INBOUND traffic to this machine ===
-    # If the packet is NOT destined for this machine, skip it
-    if dst != local_ip:
-        return True
-
-    # === Only flag traffic from private/local network IPs ===
-    # Public internet IPs (Google, Cloudflare, etc.) are NOT attackers
-    if not _is_private_ip(src):
+    # === CORE RULE: Both src and dst must be private/local IPs ===
+    # This catches LAN attacks (nmap, hping3, etc.) regardless of which
+    # interface the machine uses. Public internet IPs are filtered out.
+    if not _is_private_ip(src) or not _is_private_ip(dst):
         return True
 
     # === Skip common noise on the local network ===
@@ -174,7 +160,7 @@ def _is_noise(packet):
         if packet[UDP].dport == 53 or packet[UDP].sport == 53:
             return True
 
-    # If we get here: it's inbound, from a local IP, to this machine — classify it
+    # If we get here: private-to-private LAN traffic — classify it
     return False
 
 

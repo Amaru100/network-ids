@@ -39,6 +39,12 @@ const transporter = nodemailer.createTransport(transportConfig);
  * @returns {Promise<boolean>} True if email sent successfully
  */
 async function sendAlertEmail(alert) {
+  // Only send emails for Probe and DoS attacks (R2L/U2R are noisy false positives)
+  const emailCategories = ['Probe', 'DoS'];
+  if (!emailCategories.includes(alert.category)) {
+    return false;
+  }
+
   // Only send emails for alerts above 65% confidence
   if (alert.confidence <= 65) {
     return false;
