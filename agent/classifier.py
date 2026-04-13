@@ -68,6 +68,12 @@ class TrafficClassifier:
         logger.info(f"Classes: {list(self.label_encoder.classes_)}")
         logger.info(f"Expected features: {len(self.feature_names)}")
 
+        # Port scan detector: tracks unique dst ports per source IP
+        # If a source hits many different ports → it's a Probe, not DoS
+        self._port_tracker = {}  # {src_ip: {'ports': set(), 'first_seen': float}}
+        self._SCAN_PORT_THRESHOLD = 5   # 5+ unique ports = port scan
+        self._SCAN_WINDOW = 30          # 30 second window
+
         # Statistics tracking
         self.stats = {
             'total_classified': 0,
@@ -136,6 +142,26 @@ class TrafficClassifier:
             # Decode prediction
             category = self.label_encoder.inverse_transform([prediction])[0]
             confidence = float(probabilities[prediction]) * 100  # Convert to percentage
+
+            # Port scan override: if model says DoS but source is hitting many
+            # different ports, it's actually a Probe (port scan), not a flood
+            if category == 'DoS':
+                src_ip = metadata.get('_src_ip', '')
+                dst_port = metadata.get('_dst_port', 0)
+                now = time.time()
+
+                if src_ip not in self._port_tracker:
+                    self._port_tracker[src_ip] = {'ports': set(), 'first_seen': now}
+
+                tracker = self._port_tracker[src_ip]
+                if now - tracker['first_seen'] > self._SCAN_WINDOW:
+                    tracker['ports'] = set()
+                    tracker['first_seen'] = now
+
+                tracker['ports'].add(dst_port)
+
+                if len(tracker['ports']) >= self._SCAN_PORT_THRESHOLD:
+                    category = 'Probe'
 
             # Determine specific attack type hint based on traffic patterns
             attack_type = self._infer_attack_type(raw_features, category)
