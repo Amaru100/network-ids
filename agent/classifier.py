@@ -339,6 +339,33 @@ class TrafficClassifier:
         except requests.exceptions.RequestException:
             pass  # Don't log errors for normal traffic updates
 
+    def send_normal_batch(self, count):
+        """Send a batch normal traffic count to the backend (one HTTP call for many packets)."""
+        if self.api_url is None or count <= 0:
+            return
+        try:
+            requests.post(
+                f"{self.api_url}/api/alerts",
+                json={
+                    'category': 'Normal',
+                    'attack_type': 'normal',
+                    'confidence': 99.0,
+                    'severity': 'none',
+                    'src_ip': '0.0.0.0',
+                    'dst_ip': '0.0.0.0',
+                    'dst_port': 0,
+                    'src_port': 0,
+                    'protocol': 'tcp',
+                    'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S'),
+                    'agent_name': self.agent_name,
+                    'normal_count': count,
+                },
+                timeout=5
+            )
+            self.stats['normal_count'] += count
+        except requests.exceptions.RequestException:
+            pass
+
     def get_stats(self):
         """Return current classification statistics."""
         total = self.stats['total_classified']

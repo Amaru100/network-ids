@@ -47,6 +47,7 @@ async function handlePost(req, res) {
     protocol,
     timestamp,
     agent_name,
+    normal_count,
   } = req.body;
 
   // Validate required fields
@@ -57,11 +58,14 @@ async function handlePost(req, res) {
     });
   }
 
-  // Normal traffic — just update the counter, don't store as alert
+  // Normal traffic — update the counter (supports batch counts), don't store as alert
   if (category === 'Normal') {
-    await updateNormalCount();
-    console.log(`[Normal] Safe traffic from ${src_ip}`);
-    return res.status(201).json({ message: 'Normal traffic counted', normal: true });
+    const count = normal_count || 1;
+    for (let i = 0; i < count; i++) {
+      await updateNormalCount();
+    }
+    console.log(`[Normal] ${count} safe packets from ${agent_name || src_ip}`);
+    return res.status(201).json({ message: 'Normal traffic counted', normal: true, count });
   }
 
   // Insert alert into Supabase

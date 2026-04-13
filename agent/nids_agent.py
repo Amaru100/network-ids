@@ -180,16 +180,32 @@ def _is_noise(packet):
 
 def create_packet_handler(classifier, connection_tracker, log_all=False):
     """Create a packet processing callback."""
+    import threading
+
     packet_count = [0]
     skipped = [0]
+    normal_batch = [0]  # Count normal packets, send in batches
+    NORMAL_BATCH_SIZE = 50  # Send normal count every N filtered packets
+
+    def _send_in_background(fn, *args):
+        """Run a function in a background thread so packet handling isn't blocked."""
+        t = threading.Thread(target=fn, args=args, daemon=True)
+        t.start()
 
     def handle_packet(packet):
         if not running:
             return
 
-        # Skip known benign traffic
+        # Skip known benign traffic — count as normal
         if _is_noise(packet):
             skipped[0] += 1
+            normal_batch[0] += 1
+
+            # Send batched normal count every N packets (non-blocking)
+            if normal_batch[0] >= NORMAL_BATCH_SIZE:
+                count_to_send = normal_batch[0]
+                normal_batch[0] = 0
+                _send_in_background(classifier.send_normal_batch, count_to_send)
             return
 
         packet_count[0] += 1
@@ -203,7 +219,8 @@ def create_packet_handler(classifier, connection_tracker, log_all=False):
             return
 
         if result['category'] != 'Normal':
-            classifier.send_alert(result)
+            # Send alert in background thread — don't block packet capture
+            _send_in_background(classifier.send_alert, result)
 
             severity_icons = {'high': '!!!', 'medium': '!! ', 'low': '!  '}
             icon = severity_icons.get(result['severity'], '   ')
@@ -213,8 +230,8 @@ def create_packet_handler(classifier, connection_tracker, log_all=False):
                 f"Confidence: {result['confidence']:>6.2f}%"
             )
         else:
-            # Send Normal traffic count to backend (so dashboard counter updates)
-            classifier.send_normal(result)
+            # Count as normal, will be sent in next batch
+            normal_batch[0] += 1
             if log_all:
                 logger.info(
                     f"[   ] Normal | "
@@ -226,8 +243,7 @@ def create_packet_handler(classifier, connection_tracker, log_all=False):
             stats = classifier.get_stats()
             logger.info(
                 f"--- Stats: {stats['total_classified']} classified | "
-                f"{skipped[0]} noise skipped | "
-                f"{stats['normal_count']} normal | "
+                f"{skipped[0]} noise skipped (normal) | "
                 f"{stats['attack_count']} attacks ({stats['attack_percentage']}%) | "
                 f"{stats['alerts_sent']} alerts sent ---"
             )
