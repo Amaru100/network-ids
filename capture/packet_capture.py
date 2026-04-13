@@ -67,8 +67,25 @@ WEB_PORTS = {80, 443, 8080, 8443, 53}  # HTTP, HTTPS, DNS
 _local_ip_cache = [None]
 
 
+def _is_private_ip(ip):
+    """Check if an IP address is a private/local network address."""
+    return (ip.startswith('10.') or
+            ip.startswith('192.168.') or
+            ip.startswith('172.16.') or ip.startswith('172.17.') or
+            ip.startswith('172.18.') or ip.startswith('172.19.') or
+            ip.startswith('172.20.') or ip.startswith('172.21.') or
+            ip.startswith('172.22.') or ip.startswith('172.23.') or
+            ip.startswith('172.24.') or ip.startswith('172.25.') or
+            ip.startswith('172.26.') or ip.startswith('172.27.') or
+            ip.startswith('172.28.') or ip.startswith('172.29.') or
+            ip.startswith('172.30.') or ip.startswith('172.31.'))
+
+
 def _is_noise(packet):
-    """Check if packet is benign network noise that should be skipped."""
+    """
+    Only classifies INBOUND traffic to this machine from private/local IPs.
+    Everything else (internet, outbound, self-traffic) is filtered out.
+    """
     from scapy.all import IP, TCP, UDP
     if not packet.haslayer(IP):
         return True
@@ -76,16 +93,17 @@ def _is_noise(packet):
     src = packet[IP].src
     dst = packet[IP].dst
 
+    # Self-traffic
+    if src == dst:
+        return True
+
     # Multicast and broadcast
     if dst.startswith('224.') or dst.startswith('239.') or dst.endswith('.255'):
         return True
 
-    # Common discovery ports (UDP)
-    if packet.haslayer(UDP):
-        if packet[UDP].dport in NOISE_PORTS or packet[UDP].sport in NOISE_PORTS:
-            return True
-        if packet[UDP].dport == 53 or packet[UDP].sport == 53:
-            return True
+    # Loopback
+    if src.startswith('127.') or dst.startswith('127.'):
+        return True
 
     # Get local IP
     if _local_ip_cache[0] is None:
@@ -98,27 +116,19 @@ def _is_noise(packet):
             _local_ip_cache[0] = ''
     local_ip = _local_ip_cache[0]
 
-    if packet.haslayer(TCP):
-        dport = packet[TCP].dport
-        sport = packet[TCP].sport
+    # Only inspect INBOUND traffic to this machine
+    if dst != local_ip:
+        return True
 
-        # Outbound web traffic — not an intrusion
-        if src == local_ip and dport in WEB_PORTS:
-            return True
+    # Only flag traffic from private/local network IPs
+    if not _is_private_ip(src):
+        return True
 
-        # Responses from external servers — not an intrusion
-        if dst == local_ip and sport in WEB_PORTS:
-            return True
-
-    # UDP web traffic — QUIC/HTTP3 (Google, YouTube, etc. use UDP port 443)
+    # Skip discovery noise
     if packet.haslayer(UDP):
-        dport = packet[UDP].dport
-        sport = packet[UDP].sport
-
-        if src == local_ip and dport in WEB_PORTS:
+        if packet[UDP].dport in NOISE_PORTS or packet[UDP].sport in NOISE_PORTS:
             return True
-
-        if dst == local_ip and sport in WEB_PORTS:
+        if packet[UDP].dport == 53 or packet[UDP].sport == 53:
             return True
 
     return False

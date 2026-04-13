@@ -104,8 +104,33 @@ WEB_PORTS = {80, 443, 8080, 8443, 53}  # HTTP, HTTPS, DNS
 _local_ip_cache = [None]
 
 
+def _is_private_ip(ip):
+    """Check if an IP address is a private/local network address."""
+    return (ip.startswith('10.') or
+            ip.startswith('192.168.') or
+            ip.startswith('172.16.') or ip.startswith('172.17.') or
+            ip.startswith('172.18.') or ip.startswith('172.19.') or
+            ip.startswith('172.20.') or ip.startswith('172.21.') or
+            ip.startswith('172.22.') or ip.startswith('172.23.') or
+            ip.startswith('172.24.') or ip.startswith('172.25.') or
+            ip.startswith('172.26.') or ip.startswith('172.27.') or
+            ip.startswith('172.28.') or ip.startswith('172.29.') or
+            ip.startswith('172.30.') or ip.startswith('172.31.'))
+
+
 def _is_noise(packet):
-    """Check if packet is benign network noise that should be skipped."""
+    """
+    Check if packet is benign noise that should be skipped.
+
+    ONLY classifies traffic that is:
+    - Inbound TO this machine (dst == local_ip)
+    - FROM a private/local network IP (same subnet / LAN)
+    - Not self-traffic (src != dst)
+    - Not discovery/broadcast/multicast noise
+
+    Everything else is filtered out — internet traffic, outbound
+    browsing, responses from web servers, etc. are NOT attacks.
+    """
     from scapy.all import IP, TCP, UDP
     if not packet.haslayer(IP):
         return True
@@ -113,11 +138,35 @@ def _is_noise(packet):
     src = packet[IP].src
     dst = packet[IP].dst
 
+    # Self-traffic — never an attack
+    if src == dst:
+        return True
+
     # Multicast (224.x.x.x — 239.x.x.x) and broadcast (x.x.x.255)
     if dst.startswith('224.') or dst.startswith('239.') or dst.endswith('.255'):
         return True
 
-    # Common discovery ports (UDP)
+    # Loopback
+    if src.startswith('127.') or dst.startswith('127.'):
+        return True
+
+    # Get local IP
+    if _local_ip_cache[0] is None:
+        _local_ip_cache[0] = _get_local_ip()
+    local_ip = _local_ip_cache[0]
+
+    # === CORE RULE: Only inspect INBOUND traffic to this machine ===
+    # If the packet is NOT destined for this machine, skip it
+    if dst != local_ip:
+        return True
+
+    # === Only flag traffic from private/local network IPs ===
+    # Public internet IPs (Google, Cloudflare, etc.) are NOT attackers
+    if not _is_private_ip(src):
+        return True
+
+    # === Skip common noise on the local network ===
+    # Discovery ports (mDNS, SSDP, LLMNR, NetBIOS, DHCPv6)
     if packet.haslayer(UDP):
         if packet[UDP].dport in NOISE_PORTS or packet[UDP].sport in NOISE_PORTS:
             return True
@@ -125,37 +174,7 @@ def _is_noise(packet):
         if packet[UDP].dport == 53 or packet[UDP].sport == 53:
             return True
 
-    # Get local IP
-    if _local_ip_cache[0] is None:
-        _local_ip_cache[0] = _get_local_ip()
-    local_ip = _local_ip_cache[0]
-
-    if packet.haslayer(TCP):
-        dport = packet[TCP].dport
-        sport = packet[TCP].sport
-
-        # Outbound web traffic — local machine browsing the internet (not an intrusion)
-        if src == local_ip and dport in WEB_PORTS:
-            return True
-
-        # Responses from external servers to local machine on ephemeral ports
-        # (these are replies to your web requests, not attacks)
-        if dst == local_ip and sport in WEB_PORTS:
-            return True
-
-    # UDP web traffic — QUIC/HTTP3 (Google, YouTube, etc. use UDP port 443)
-    if packet.haslayer(UDP):
-        dport = packet[UDP].dport
-        sport = packet[UDP].sport
-
-        # Outbound QUIC requests
-        if src == local_ip and dport in WEB_PORTS:
-            return True
-
-        # Inbound QUIC responses (e.g. Google 142.251.x.x replying on UDP 443)
-        if dst == local_ip and sport in WEB_PORTS:
-            return True
-
+    # If we get here: it's inbound, from a local IP, to this machine — classify it
     return False
 
 
