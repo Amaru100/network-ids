@@ -1,0 +1,190 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Low-Level Component Diagram" id="low-level">
+    <mxGraphModel dx="1522" dy="862" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="&lt;b&gt;Figure 4.2: Low-Level Component Diagram&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="380" y="10" width="320" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ============ CAPTURE TIER ============ -->
+        <mxCell id="capture_tier" value="&lt;b&gt;CAPTURE TIER&lt;/b&gt; (Python Agent — nids_agent.py)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#333333;verticalAlign=top;fontSize=11;dashed=1;dashPattern=5 5;" vertex="1" parent="1">
+          <mxGeometry x="20" y="50" width="480" height="310" as="geometry" />
+        </mxCell>
+
+        <!-- Network Interface -->
+        <mxCell id="nic" value="Network Interface&#xa;(Promiscuous Mode)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="85" width="130" height="45" as="geometry" />
+        </mxCell>
+
+        <!-- Scapy sniff -->
+        <mxCell id="scapy" value="Scapy sniff()&#xa;(Packet Capture Loop)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="155" width="130" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="a1" value="Raw IP&#xa;Packets" style="fontSize=8;" edge="1" source="nic" target="scapy" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Noise Filter -->
+        <mxCell id="noise" value="Noise Filter&#xa;_is_noise()&#xa;&#xa;Skips: multicast, broadcast,&#xa;mDNS, SSDP, LLMNR, DNS,&#xa;HTTP/HTTPS/QUIC (80,443,53)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="40" y="225" width="170" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="a2" value="" style="" edge="1" source="scapy" target="noise" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Feature Extractor -->
+        <mxCell id="feat_ext" value="&lt;b&gt;feature_extractor.py&lt;/b&gt;&#xa;&#xa;extract_features()&#xa;• 41 NSL-KDD features&#xa;• get_tcp_flags()&#xa;• get_service()&#xa;• get_protocol()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="240" y="80" width="150" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="a3" value="Filtered&#xa;Packets" style="fontSize=8;" edge="1" source="noise" target="feat_ext" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Connection Tracker -->
+        <mxCell id="conn_track" value="&lt;b&gt;ConnectionTracker&lt;/b&gt;&#xa;&#xa;• time_window = 2s&#xa;• host_window = 100&#xa;• compute_time_features()&#xa;• compute_host_features()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="240" y="220" width="160" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="a3b" value="Stats" style="fontSize=8;dashed=1;" edge="1" source="conn_track" target="feat_ext" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Classifier -->
+        <mxCell id="classifier" value="&lt;b&gt;classifier.py&lt;/b&gt;&#xa;&#xa;• load best_model.pkl&#xa;• load scaler.pkl&#xa;• load label_encoder.pkl&#xa;• load feature_names.pkl&#xa;• StandardScaler transform&#xa;• predict_proba()&#xa;• send_alert() → POST /api/alerts&#xa;• send_normal() → POST /api/alerts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="420" y="80" width="195" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="a4" value="41-Feature&#xa;Vector" style="fontSize=8;" edge="1" source="feat_ext" target="classifier" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Model Artifacts -->
+        <mxCell id="model_files" value="model/&#xa;├── best_model.pkl&#xa;├── scaler.pkl&#xa;├── label_encoder.pkl&#xa;└── feature_names.pkl" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;size=15;fillColor=#f5f5f5;strokeColor=#666666;fontSize=9;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="420" y="270" width="160" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="a_model" value="loads" style="fontSize=8;dashed=1;" edge="1" source="model_files" target="classifier" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Heartbeat Thread -->
+        <mxCell id="heartbeat" value="Heartbeat Thread&#xa;(every 30s)&#xa;POST /api/agents" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="640" y="275" width="120" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- ============ APPLICATION TIER ============ -->
+        <mxCell id="app_tier" value="&lt;b&gt;APPLICATION TIER&lt;/b&gt; (Node.js Serverless — Vercel)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#333333;verticalAlign=top;fontSize=11;dashed=1;dashPattern=5 5;" vertex="1" parent="1">
+          <mxGeometry x="640" y="50" width="220" height="210" as="geometry" />
+        </mxCell>
+
+        <!-- alerts.js -->
+        <mxCell id="alerts_js" value="&lt;b&gt;alerts.js&lt;/b&gt;&#xa;&#xa;POST: validate → insert → email&#xa;GET: query with filters" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="655" y="80" width="190" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- agents.js -->
+        <mxCell id="agents_js" value="&lt;b&gt;agents.js&lt;/b&gt;&#xa;&#xa;POST: upsert heartbeat&#xa;GET: list with online/offline" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="655" y="150" width="190" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- emailService.js -->
+        <mxCell id="email_js" value="&lt;b&gt;emailService.js&lt;/b&gt;&#xa;Nodemailer SMTP&#xa;(Gmail / Office 365)&#xa;Threshold: &gt; 65%" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="655" y="215" width="190" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- Arrows from classifier to backend -->
+        <mxCell id="a5" value="HTTPS POST&#xa;JSON Alert" style="fontSize=8;" edge="1" source="classifier" target="alerts_js" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a5b" value="" style="fontSize=8;" edge="1" source="heartbeat" target="agents_js" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_email_link" value="if &gt; 65%" style="fontSize=8;dashed=1;" edge="1" source="alerts_js" target="email_js" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ============ DATA TIER ============ -->
+        <mxCell id="data_tier" value="&lt;b&gt;DATA TIER&lt;/b&gt; (Supabase PostgreSQL)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#333333;verticalAlign=top;fontSize=11;dashed=1;dashPattern=5 5;" vertex="1" parent="1">
+          <mxGeometry x="640" y="380" width="220" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- alerts table -->
+        <mxCell id="alerts_tbl" value="&lt;b&gt;alerts&lt;/b&gt;&#xa;id, timestamp, src_ip,&#xa;dst_ip, prediction,&#xa;confidence, agent_name..." style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="650" y="410" width="95" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- agents table -->
+        <mxCell id="agents_tbl" value="&lt;b&gt;agents&lt;/b&gt;&#xa;id, agent_name,&#xa;hostname, ip_address,&#xa;last_heartbeat..." style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="755" y="410" width="95" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Arrows app to data -->
+        <mxCell id="a6" value="INSERT" style="fontSize=8;" edge="1" source="alerts_js" target="alerts_tbl" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a6b" value="UPSERT" style="fontSize=8;" edge="1" source="agents_js" target="agents_tbl" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Realtime label -->
+        <mxCell id="rt_label" value="Supabase Realtime&#xa;(WebSocket broadcast)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=9;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="665" y="520" width="120" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ============ PRESENTATION TIER ============ -->
+        <mxCell id="pres_tier" value="&lt;b&gt;PRESENTATION TIER&lt;/b&gt; (React 18 + Vite)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#333333;verticalAlign=top;fontSize=11;dashed=1;dashPattern=5 5;" vertex="1" parent="1">
+          <mxGeometry x="900" y="380" width="220" height="210" as="geometry" />
+        </mxCell>
+
+        <mxCell id="app_jsx" value="&lt;b&gt;App.jsx&lt;/b&gt;&#xa;(Main Component)&#xa;Supabase Realtime subscription" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="910" y="410" width="200" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="agent_status" value="AgentStatus.jsx" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="910" y="465" width="95" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="stats_cards" value="StatsCards.jsx" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="1015" y="465" width="95" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="alert_tbl_comp" value="AlertTable.jsx" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="910" y="505" width="95" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="charts_comp" value="Charts (Recharts)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="1015" y="505" width="95" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="supabase_js" value="supabase.js&#xa;(Client Config)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="960" y="545" width="100" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Render arrows -->
+        <mxCell id="r1" value="" style="fontSize=7;" edge="1" source="app_jsx" target="agent_status" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r2" value="" style="fontSize=7;" edge="1" source="app_jsx" target="stats_cards" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r3" value="" style="fontSize=7;" edge="1" source="app_jsx" target="alert_tbl_comp" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r4" value="" style="fontSize=7;" edge="1" source="app_jsx" target="charts_comp" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- WebSocket arrow from data to presentation -->
+        <mxCell id="a7" value="WebSocket&#xa;INSERT events" style="fontSize=8;dashed=1;" edge="1" source="data_tier" target="app_jsx" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Email to admin -->
+        <mxCell id="email_dest" value="Admin Email&#xa;Inbox" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="420" y="380" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="a_email_out" value="SMTP&#xa;Alert Email" style="fontSize=8;" edge="1" source="email_js" target="email_dest" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,160 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="High-Level Architecture" id="high-level">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="&lt;b&gt;Figure 4.1: High-Level System Architecture&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="350" y="10" width="340" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- CAPTURE TIER (Left) -->
+        <mxCell id="capture_tier" value="&lt;b&gt;CAPTURE TIER&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;verticalAlign=top;fontSize=12;dashed=1;dashPattern=5 5;" vertex="1" parent="1">
+          <mxGeometry x="20" y="60" width="280" height="360" as="geometry" />
+        </mxCell>
+
+        <!-- Agent 1 -->
+        <mxCell id="agent1_box" value="&lt;b&gt;Agent: PC-001&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="240" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="scapy1" value="Scapy&#xa;Capture" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="50" y="130" width="65" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="noise1" value="Noise&#xa;Filter" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="125" y="130" width="65" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="ml1" value="ML&#xa;Classifier" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="200" y="130" width="65" height="45" as="geometry" />
+        </mxCell>
+
+        <!-- Agent 2 -->
+        <mxCell id="agent2_box" value="&lt;b&gt;Agent: PC-002&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="210" width="240" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="scapy2" value="Scapy&#xa;Capture" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="50" y="240" width="65" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="noise2" value="Noise&#xa;Filter" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="125" y="240" width="65" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="ml2" value="ML&#xa;Classifier" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="200" y="240" width="65" height="45" as="geometry" />
+        </mxCell>
+
+        <!-- Agent N -->
+        <mxCell id="agent3_box" value="&lt;b&gt;Agent: PC-N&lt;/b&gt;  (additional machines)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;strokeWidth=1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="320" width="240" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Arrows from agents to internet -->
+        <mxCell id="arrow_a1" value="HTTPS POST&#xa;/api/alerts" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;fontSize=8;" edge="1" source="agent1_box" target="internet" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow_a2" value="HTTPS POST&#xa;/api/agents" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;fontSize=8;" edge="1" source="agent2_box" target="internet" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Internet Cloud -->
+        <mxCell id="internet" value="Internet&#xa;(HTTPS)" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="370" y="170" width="130" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- APPLICATION TIER (Middle) -->
+        <mxCell id="app_tier" value="&lt;b&gt;APPLICATION TIER&lt;/b&gt;&#xa;(Vercel Serverless)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;verticalAlign=top;fontSize=12;dashed=1;dashPattern=5 5;" vertex="1" parent="1">
+          <mxGeometry x="560" y="60" width="220" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="alerts_api" value="/api/alerts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="580" y="100" width="80" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="agents_api" value="/api/agents" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="680" y="100" width="80" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="stats_api" value="/api/stats" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="580" y="150" width="80" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="health_api" value="/api/health" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="680" y="150" width="80" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="email_svc" value="Email Service&#xa;(Nodemailer)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="610" y="200" width="120" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- Arrow internet to app tier -->
+        <mxCell id="arrow_inet_app" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="internet" target="app_tier" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- DATA TIER -->
+        <mxCell id="data_tier" value="&lt;b&gt;DATA TIER&lt;/b&gt;&#xa;(Supabase)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;verticalAlign=top;fontSize=12;dashed=1;dashPattern=5 5;" vertex="1" parent="1">
+          <mxGeometry x="560" y="300" width="220" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="alerts_tbl" value="alerts table" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="580" y="340" width="80" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="agents_tbl" value="agents table" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="680" y="340" width="80" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="realtime_label" value="Realtime WebSocket" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=9;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="610" y="405" width="110" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Arrow app to data -->
+        <mxCell id="arrow_app_data" value="INSERT" style="edgeStyle=orthogonalEdgeStyle;rounded=1;fontSize=9;" edge="1" source="app_tier" target="data_tier" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- PRESENTATION TIER -->
+        <mxCell id="pres_tier" value="&lt;b&gt;PRESENTATION TIER&lt;/b&gt;&#xa;(React Dashboard)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;verticalAlign=top;fontSize=12;dashed=1;dashPattern=5 5;" vertex="1" parent="1">
+          <mxGeometry x="850" y="60" width="250" height="370" as="geometry" />
+        </mxCell>
+        <mxCell id="agent_panel" value="Agent Status Panel&#xa;(Online/Offline)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="870" y="100" width="210" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="kpi_cards" value="KPI Summary Cards&#xa;(Total Alerts, Normal, Active Threats, Detection Rate, Status)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="870" y="155" width="210" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="alert_table" value="Alert Table&#xa;(Time, Agent, Category, Confidence, IPs, Port)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="870" y="215" width="210" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="charts" value="Visualisations&#xa;(Pie Chart, Bar Chart)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="870" y="275" width="210" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="filters" value="Filters &amp; Controls&#xa;(Category, Severity, Clear)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="870" y="330" width="210" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Arrow data to dashboard (WebSocket) -->
+        <mxCell id="arrow_data_dash" value="WebSocket&#xa;(Realtime)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;fontSize=9;dashed=1;" edge="1" source="data_tier" target="pres_tier" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Email arrow -->
+        <mxCell id="email_icon" value="📧 Admin Email&#xa;(SMTP Alert)" style="shape=image;verticalLabelPosition=middle;labelPosition=right;align=left;imageAlign=center;spacingLeft=5;image=img/lib/mscae/Exchange_On_premises_Access.svg;fillColor=#f8cecc;strokeColor=#b85450;rounded=1;whiteSpace=wrap;html=1;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="370" y="370" width="130" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow_email" value="SMTP" style="edgeStyle=orthogonalEdgeStyle;rounded=1;fontSize=9;" edge="1" source="email_svc" target="email_icon" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Admin user -->
+        <mxCell id="admin" value="IT Administrator" style="shape=mxgraph.basic.user;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="960" y="450" width="40" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow_dash_admin" value="Views" style="edgeStyle=orthogonalEdgeStyle;rounded=1;fontSize=9;" edge="1" source="pres_tier" target="admin" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Network packets icon (left of agents) -->
+        <mxCell id="network" value="Network&#xa;Traffic" style="shape=mxgraph.cisco.routers.wireless_router;html=1;fillColor=#036897;strokeColor=#036897;sketch=0;fontSize=9;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="-70" y="190" width="55" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow_net" value="Packets" style="fontSize=9;" edge="1" source="network" target="capture_tier" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
