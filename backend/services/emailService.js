@@ -24,6 +24,12 @@ const transportConfig = provider === 'gmail'
 
 const transporter = nodemailer.createTransport(transportConfig);
 
+// Rate limiter: max 3 emails per attack category+agent combo per 25 minutes
+// Key: "category:agent_name" → { count, windowStart }
+const emailRateTracker = {};
+const MAX_EMAILS_PER_WINDOW = 3;
+const WINDOW_MS = 25 * 60 * 1000; // 25 minutes
+
 /**
  * Send an attack alert email to the administrator.
  *
@@ -49,6 +55,30 @@ async function sendAlertEmail(alert) {
   if (alert.confidence <= 65) {
     return false;
   }
+
+  // Rate limit: 3 emails per category+agent per 25 minutes
+  const rateKey = `${alert.category}:${alert.agent_name || 'unknown'}`;
+  const now = Date.now();
+
+  if (!emailRateTracker[rateKey]) {
+    emailRateTracker[rateKey] = { count: 0, windowStart: now };
+  }
+
+  const tracker = emailRateTracker[rateKey];
+
+  // Reset window if 25 minutes have passed
+  if (now - tracker.windowStart >= WINDOW_MS) {
+    tracker.count = 0;
+    tracker.windowStart = now;
+  }
+
+  // Check if limit reached for this category+agent
+  if (tracker.count >= MAX_EMAILS_PER_WINDOW) {
+    console.log(`[Email] Rate limited: ${rateKey} (${tracker.count}/${MAX_EMAILS_PER_WINDOW} in window)`);
+    return false;
+  }
+
+  tracker.count++;
 
   // Check if email is configured
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
